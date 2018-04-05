@@ -1,29 +1,20 @@
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
-
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.UnsupportedAudioFileException;
 
 import javazoom.jl.decoder.JavaLayerException;
-import javazoom.jl.player.JavaSoundAudioDevice;
 import javazoom.jl.player.Player;
 
-public class AudioOS {
+public class AudioOS implements Runnable{
 	
 	FileInputStream input;
 	BufferedInputStream buffer = null;
 	int frameClip;
 	Player clip = null;
+	String songName;
+	Thread td;
+	boolean playing=false;
 	
-	public AudioOS(){
-	}
-	
-	public boolean play(String song){
+	public void playFile(String song){
 		try {
 			input = new FileInputStream(song+".mp3");
 			buffer = new BufferedInputStream(input);
@@ -31,27 +22,57 @@ public class AudioOS {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return false;
 		}
 		try {
 			clip.play();
-			System.out.println("Playing");
-			return true;
+			playing=true;
 		} catch (JavaLayerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			playing=false;
+		}
+	}
+	
+	public boolean findSong(String song){
+		try {
+			input = new FileInputStream(song+".mp3");
+			return true;
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return false;
 		}
 	}
+	
 	public void stop(){
-		clip.close();
-		System.out.println(clip);
+		if(playing){
+			clip.close();
+			td.interrupt();
+		}
+		playing=false;
+	}
+	
+	public boolean isPlaying(){
+		return playing;
 	}
 	
 	public static void main(String args[]){
-		
 		AudioOS audio = new AudioOS();
 		audio.play("El Mono de Alambre");
-		audio.stop();
+	}
+
+	public boolean play(String song){
+		songName = song;
+		if(findSong(song)){
+			td = new Thread(this);
+			td.start();
+			return true;
+		}
+		return false;
+	}
+	
+	@Override
+	public void run() {
+		playFile(songName);
 	}
 }

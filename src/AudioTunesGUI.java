@@ -3,14 +3,13 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.peer.PanelPeer;
 import java.util.Vector;
-import java.util.concurrent.BrokenBarrierException;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
-public class AudioTunesGUI extends JFrame implements ActionListener{
+public class AudioTunesGUI extends JFrame implements ActionListener, ListSelectionListener{
 
 	JPanel panelUser, panelArtists, panelAlbums, panelSongs, panelAudio,
 		panelMain;
@@ -21,7 +20,8 @@ public class AudioTunesGUI extends JFrame implements ActionListener{
 	AudioOS audio = new AudioOS();
 	AudioAD audioAD = new AudioAD();
 	
-	String artists, songs, albums;
+	Vector artists, songs, albums;
+	JList artistList, songList, albumList;
 	
 	public AudioTunesGUI(){
 		
@@ -38,7 +38,7 @@ public class AudioTunesGUI extends JFrame implements ActionListener{
 		bPlay = new JButton("Play");
 		bStop = new JButton("Stop");
 		
-		taArtists = new JTextArea("Artists", 15, 10);
+		taArtists = new JTextArea("Artists", 1, 10);
 		taAlbums = new JTextArea("Albums");
 		taSongs = new JTextArea("Songs", 15, 10);
 		
@@ -95,30 +95,96 @@ public class AudioTunesGUI extends JFrame implements ActionListener{
 		setTitle("Audio Tunes Tec");
 		setVisible(true);
 		
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
 	}
 	
 	public void actionPerformed(ActionEvent e){
 		if(e.getSource()==bSongs){
 			// Get db attributes
-			songs = audioAD.getSongs(tfAlbum.getText());
+			songs = audioAD.getSongsVector(tfAlbum.getText());
+			songList = new JList(songs);
+			songList.addListSelectionListener(this);
 			
 			// Set text on text areas
-			taSongs.setText("Songs:\n"+songs);
+			panelSongs.setVisible(false);
+			panelSongs.removeAll();
+			panelSongs.add(songList);
+			panelSongs.setVisible(true);
 		}
 		else if(e.getSource()==bAlbums){
 			// Get db attributes
-			albums = audioAD.getAlbums(tfArtist.getText());
+			albums = audioAD.getAlbumsVector(tfArtist.getText());
+			
+			albumList = new JList(albums);
+			albumList.addListSelectionListener(this);
 			
 			// Set text on text areas
-			taAlbums.setText("Albums:\n"+albums);
+			panelAlbums.setVisible(false);
+			panelAlbums.removeAll();
+			panelAlbums.add(albumList);
+			panelAlbums.setVisible(true);
 		}
 		else if(e.getSource()==bCatalog){
 			// Get db attributes
-			artists = audioAD.getArtists();
+			artists = audioAD.getArtistsVector();
+			
+			artistList = new JList(artists);
+			artistList.addListSelectionListener(this);
 			
 			// Set text on text areas
-			taArtists.setText("Artistas:\n"+artists);
+			panelArtists.setVisible(false);
+			panelArtists.removeAll();
+			panelArtists.add(artistList);
+			panelArtists.setVisible(true);
+		}else if(e.getSource()==bPlay){
+			if(!audio.play(tfSong.getText()))
+				tfSong.setText("Not found");
+		}else if(e.getSource()==bStop){
+			if(audio.isPlaying())
+				audio.stop();
 		}
+	}
+	
+	public void valueChanged(ListSelectionEvent ls){
+		if(ls.getValueIsAdjusting()==true){
+			if(ls.getSource()==artistList){
+				String desiredArtist;
+				desiredArtist = (String)artistList.getSelectedValue();
+				tfArtist.setText(desiredArtist);
+				
+				// Get db attributes
+				albums = audioAD.getAlbumsVector(tfArtist.getText());
+				
+				albumList = new JList(albums);
+				albumList.addListSelectionListener(this);
+				
+				// Set text on text areas
+				panelAlbums.setVisible(false);
+				panelAlbums.removeAll();
+				panelAlbums.add(albumList);
+				panelAlbums.setVisible(true);
+			}else if(ls.getSource()==albumList){
+				String desiredAlbum;
+				desiredAlbum = (String)albumList.getSelectedValue();
+				tfAlbum.setText(desiredAlbum);
+				
+				// Get db attributes
+				songs = audioAD.getSongsVector(tfAlbum.getText());
+				songList = new JList(songs);
+				songList.addListSelectionListener(this);
+				
+				// Set text on text areas
+				panelSongs.setVisible(false);
+				panelSongs.removeAll();
+				panelSongs.add(songList);
+				panelSongs.setVisible(true);
+			}else if(ls.getSource()==songList){
+				String desiredSong;
+				desiredSong = (String)songList.getSelectedValue();
+				tfSong.setText(desiredSong);
+			}
+		}	
 	}
 	
 	
